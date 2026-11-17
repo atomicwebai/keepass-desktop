@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, clipboard, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, clipboard, shell, Menu } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const kdbxService = require('./kdbx-service');
@@ -9,6 +9,35 @@ let mainWindow = null;
 let clipboardClearTimer = null;
 
 const iconPath = path.join(__dirname, 'assets', 'icon.png');
+
+const APP_MENU_TEMPLATE = [
+    {
+        label: 'File',
+        submenu: [
+            { role: 'close', label: 'Close Window' },
+            { role: 'quit', label: 'Quit' }
+        ]
+    },
+    { label: 'Edit', submenu: [{ role: 'undo' }, { role: 'redo' }, { type: 'separator' }, { role: 'cut' }, { role: 'copy' }, { role: 'paste' }, { role: 'selectAll' }] },
+    { label: 'View', submenu: [{ role: 'reload' }, { role: 'toggleDevTools' }, { type: 'separator' }, { role: 'resetZoom' }, { role: 'zoomIn' }, { role: 'zoomOut' }, { type: 'separator' }, { role: 'togglefullscreen' }] },
+    { role: 'window', label: 'Window', submenu: [{ role: 'minimize' }, { role: 'zoom' }] },
+    {
+        label: 'About',
+        submenu: [{
+            label: 'About KeePass',
+            click: () => {
+                const focusedWindow = BrowserWindow.getFocusedWindow();
+                dialog.showMessageBox(focusedWindow, {
+                    type: 'info',
+                    title: 'About KeePass',
+                    message: 'KeePass Manager',
+                    detail: `Version ${app.getVersion()}`,
+                    buttons: ['OK']
+                });
+            }
+        }]
+    }
+];
 
 function createWindow() {
     mainWindow = new BrowserWindow({
@@ -28,6 +57,10 @@ function createWindow() {
     });
 
     mainWindow.loadFile('index.html');
+}
+
+function createApplicationMenu() {
+    Menu.setApplicationMenu(Menu.buildFromTemplate(APP_MENU_TEMPLATE));
 }
 
 // Setup IPC Handlers
@@ -189,6 +222,7 @@ function setupIpc() {
 
 app.whenReady().then(() => {
     setupIpc();
+    createApplicationMenu();
     createWindow();
 
     app.on('activate', () => {
